@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+    http://www.liquibase.org/xml/ns/dbchangelog
+    https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="user-001-ext-uuid" author="system">
+        <sql>CREATE EXTENSION IF NOT EXISTS "uuid-ossp";</sql>
+    </changeSet>
+
+    <changeSet id="user-010-users" author="system">
+        <createTable tableName="users">
+            <column name="user_id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="full_name" type="varchar(150)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="email" type="varchar(255)"/>
+            <column name="phone" type="varchar(30)"/>
+
+            <column name="role" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="created_at" type="timestamptz" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamptz" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <sql>
+            ALTER TABLE "users"
+                ADD CONSTRAINT chk_users_role
+                    CHECK (role IN ('CUSTOMER','STAFF','ADMIN'));
+        </sql>
+
+        <!-- email unique (case-insensitive), only when not null -->
+        <sql>
+            CREATE UNIQUE INDEX IF NOT EXISTS ux_users_email
+                ON users(lower(email))
+                WHERE email IS NOT NULL;
+        </sql>
+
+        <!-- phone unique only when not null -->
+        <sql>
+            CREATE UNIQUE INDEX IF NOT EXISTS ux_users_phone
+                ON users(phone)
+                WHERE phone IS NOT NULL;
+        </sql>
+
+        <createIndex indexName="idx_users_role" tableName="users">
+            <column name="role"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="user-020-staff-profiles" author="system">
+        <createTable tableName="staff_profiles">
+            <column name="staff_id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="specialty" type="varchar(100)"/>
+            <column name="location_id" type="uuid"/>
+
+            <column name="is_available" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="created_at" type="timestamptz" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamptz" defaultValueComputed="now()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+                constraintName="fk_staff_profiles_user"
+                baseTableName="staff_profiles" baseColumnNames="staff_id"
+                referencedTableName="users" referencedColumnNames="user_id"
+                onDelete="CASCADE"/>
+
+        <createIndex indexName="idx_staff_profiles_location" tableName="staff_profiles">
+            <column name="location_id"/>
+        </createIndex>
+
+        <createIndex indexName="idx_staff_profiles_available" tableName="staff_profiles">
+            <column name="is_available"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="user-100-updated-at-trigger-fn" author="system">
+        <sql>
+            CREATE OR REPLACE FUNCTION set_updated_at()
+      RETURNS trigger AS $$
+            BEGIN
+        NEW.updated_at = now();
+            RETURN NEW;
+            END;
+      $$ LANGUAGE plpgsql;
+        </sql>
+    </changeSet>
+
+    <changeSet id="user-110-users-updated-at-trigger" author="system">
+        <sql>
+            DROP TRIGGER IF EXISTS trg_users_updated_at ON users;
+            CREATE TRIGGER trg_users_updated_at
+                BEFORE UPDATE ON users
+                FOR EACH ROW
+                EXECUTE FUNCTION set_updated_at();
+        </sql>
+    </changeSet>
+
+    <changeSet id="user-120-staff-profiles-updated-at-trigger" author="system">
+        <sql>
+            DROP TRIGGER IF EXISTS trg_staff_profiles_updated_at ON staff_profiles;
+            CREATE TRIGGER trg_staff_profiles_updated_at
+                BEFORE UPDATE ON staff_profiles
+                FOR EACH ROW
+                EXECUTE FUNCTION set_updated_at();
+        </sql>
+    </changeSet>
+</databaseChangeLog>
